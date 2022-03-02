@@ -79,14 +79,12 @@ def generate_level_sets(x_lim: list, y_lim: list, loss_function: callable, n_gri
     :return: tuple, resulting X,Y,Z
     """
 
-    def enumerated_product(*args):
-        yield from zip(itertools.product(*(range(len(x)) for x in args)), itertools.product(*args))
-
     x = jnp.linspace(x_lim[0], x_lim[1], n_grid)
     y = jnp.linspace(y_lim[0], y_lim[1], n_grid)
     x_mat, y_mat = jnp.meshgrid(x, y)
     z = []
-    for _, (x_t, y_t) in enumerated_product(x, y):
+    # this is stupid slow, go to a vectorized format
+    for x_t, y_t in itertools.product(x, y):
         p_temp = jnp.array([x_t, y_t])
         z.append(loss_function(p_temp))
 
@@ -98,16 +96,17 @@ def generate_level_sets(x_lim: list, y_lim: list, loss_function: callable, n_gri
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
-    LR = .01
+    LR = .04
     PARAMS_0 = jnp.array([1, 1.5])
+    k_viz = 500  # only show last k data points in scatter plot on level set graph
     gd = GradientDescent(loss_fn=loss_example, learning_rate=LR, track_params=True)
 
-    gd.n_step(PARAMS_0, n_step=10)
+    gd.n_step(PARAMS_0, n_step=1000)
     PARAM_HIST = gd.get_history()
-    print()
+    PARAM_HIST_SEMI_CONV = PARAM_HIST[k_viz:, :]
 
     # Visualize the evolution of the parameters
-    X, Y, Z = generate_level_sets([-2.5, 2.5], [-2.5, 2.5], loss_example, n_grid=100)
+    X, Y, Z = generate_level_sets([-4, .5], [-2, 4.5], loss_example, n_grid=50)
     fig, ax = plt.subplots(2, 1)
 
     ax[0].plot(PARAM_HIST[:, 0], label=r'$\theta_1$')
@@ -117,11 +116,18 @@ if __name__ == '__main__':
     ax[0].set_ylabel('Value')
     ax[0].legend()
 
-    ax[1].scatter(PARAM_HIST[-1, 0], PARAM_HIST[-1, 1], label=r'$\theta_{final}$')
-    ax[1].contour(X, Y, Z, linewidth=0.5)
+    ax[1].scatter(PARAM_HIST_SEMI_CONV[:, 0], PARAM_HIST_SEMI_CONV[:, 1], c='r', alpha=0.3, label=r'$\theta_{k>kviz}}$')
+    ax[1].scatter(PARAM_HIST[-1, 0], PARAM_HIST[-1, 1], c='b', label=r'$\theta_{final}$')
+    ax[1].contour(X, Y, Z)
     ax[1].set_title('Parameter space with level sets')
     ax[1].set_ylabel(r'$\theta_1$')
     ax[1].set_xlabel(r'$\theta_2$')
     ax[1].legend()
+
+    fig2, ax2 = plt.subplots(2, 1)
+    ax2[0].hist(PARAM_HIST_SEMI_CONV[:, 0], bins=100)
+    ax2[1].hist(PARAM_HIST_SEMI_CONV[:, 1], bins=100)
+    fig2.suptitle('Parameter histograms for kviz points')
+
     plt.tight_layout()
     plt.show()
