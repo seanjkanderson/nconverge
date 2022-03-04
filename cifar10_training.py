@@ -37,12 +37,12 @@ def train_resnet(learning_rate: float, resume=False):
     trainset = torchvision.datasets.CIFAR10(
         root='./data', train=True, download=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(
-        trainset, batch_size=128, shuffle=True, num_workers=2)
+        trainset, batch_size=16, shuffle=True, num_workers=2)
 
     testset = torchvision.datasets.CIFAR10(
         root='./data', train=False, download=True, transform=transform_test)
     testloader = torch.utils.data.DataLoader(
-        testset, batch_size=100, shuffle=False, num_workers=2)
+        testset, batch_size=64, shuffle=False, num_workers=2)
 
     classes = ('plane', 'car', 'bird', 'cat', 'deer',
                'dog', 'frog', 'horse', 'ship', 'truck')
@@ -89,6 +89,9 @@ def train_resnet(learning_rate: float, resume=False):
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
+            if batch_idx % 10 == 0:
+                print('Current batch: {}'.format(batch_idx))
+
     def test(epoch):
         global best_acc
         net.eval()
@@ -119,7 +122,7 @@ def train_resnet(learning_rate: float, resume=False):
                 os.mkdir('checkpoint')
             torch.save(state, './checkpoint/ckpt.pth')
             best_acc = acc
-
+    best_acc = 1e9
     for epoch in range(start_epoch, start_epoch+200):
         train(epoch)
         test(epoch)
