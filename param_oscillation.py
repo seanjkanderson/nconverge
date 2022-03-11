@@ -95,8 +95,9 @@ def generate_level_sets(x_lim: list, y_lim: list, loss_function: callable, n_gri
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    import numpy as np
 
-    LR = .04
+    LR = .015
     PARAMS_0 = jnp.array([1, 1.5])
     k_viz = 500  # only show last k data points in scatter plot on level set graph
     gd = GradientDescent(loss_fn=loss_example, learning_rate=LR, track_params=True)
@@ -107,27 +108,41 @@ if __name__ == '__main__':
 
     # Visualize the evolution of the parameters
     X, Y, Z = generate_level_sets([-4, .5], [-2, 4.5], loss_example, n_grid=50)
-    fig, ax = plt.subplots(2, 1)
+    fig, ax = plt.subplots(2, 2)
 
-    ax[0].plot(PARAM_HIST[:, 0], label=r'$\theta_1$')
-    ax[0].plot(PARAM_HIST[:, 1], label=r'$\theta_2$')
-    ax[0].set_title('Parameter Trajectories')
-    ax[0].set_xlabel('Iteration')
-    ax[0].set_ylabel('Value')
-    ax[0].legend()
+    ax[0, 0].plot(PARAM_HIST[:, 0], label=r'$\theta_1$')
+    ax[0, 0].plot(PARAM_HIST[:, 1], label=r'$\theta_2$')
+    ax[0, 0].set_title('Parameter Trajectories')
+    ax[0, 0].set_xlabel('Iteration')
+    ax[0, 0].set_ylabel('Value')
+    ax[0, 0].set_xlim([0, 50])
+    ax[0, 0].legend()
 
-    ax[1].scatter(PARAM_HIST_SEMI_CONV[:, 0], PARAM_HIST_SEMI_CONV[:, 1], c='r', alpha=0.3, label=r'$\theta_{k>kviz}}$')
-    ax[1].scatter(PARAM_HIST[-1, 0], PARAM_HIST[-1, 1], c='b', label=r'$\theta_{final}$')
-    ax[1].contour(X, Y, Z)
-    ax[1].set_title('Parameter space with level sets')
-    ax[1].set_ylabel(r'$\theta_1$')
-    ax[1].set_xlabel(r'$\theta_2$')
-    ax[1].legend()
+    ax[1, 0].scatter(PARAM_HIST[:k_viz, 0], PARAM_HIST[:k_viz, 1], c='g', alpha=0.1, label=r'$\theta_{k \leq 500}$')
+    ax[1, 0].scatter(PARAM_HIST_SEMI_CONV[:, 0], PARAM_HIST_SEMI_CONV[:, 1], c='r', alpha=0.3, label=r'$\theta_{k>500}}$')
+    ax[1, 0].scatter(PARAM_HIST[-1, 0], PARAM_HIST[-1, 1], c='b', label=r'$\theta_{final}$')
+    ax[1, 0].contour(X, Y, Z)
+    ax[1, 0].set_title('Parameter space with level sets')
+    ax[1, 0].set_xlabel(r'$\theta_1$')
+    ax[1, 0].set_ylabel(r'$\theta_2$')
+    ax[1, 0].legend()
 
-    fig2, ax2 = plt.subplots(2, 1)
-    ax2[0].hist(PARAM_HIST_SEMI_CONV[:, 0], bins=100)
-    ax2[1].hist(PARAM_HIST_SEMI_CONV[:, 1], bins=100)
-    fig2.suptitle('Parameter histograms for kviz points')
+    # fig2, ax2 = plt.subplots(2, 1)
+    bins = np.histogram(PARAM_HIST[:, 0], bins=100)[1]
+    bins2 = np.histogram(PARAM_HIST[:, 1], bins=100)[1]
+    ax[0, 1].hist(PARAM_HIST[:, 0], bins=bins, label='all k')
+    ax[1, 1].hist(PARAM_HIST[:, 1], bins=bins2, label='all k')
+    ax[0, 1].hist(PARAM_HIST_SEMI_CONV[:, 0], bins=bins, label='k > 500')
+    ax[1, 1].hist(PARAM_HIST_SEMI_CONV[:, 1], bins=bins2, label='k > 500')
 
+    ax[0, 1].set_title('Parameter histograms')
+    # fig2.suptitle('Parameter histograms')
+    for i in range(2):
+        ax[i, 1].legend()
+        ax[i, 1].set_ylabel('Frequency (count)')
+    ax[0, 1].set_xlabel(r'$\theta_1$')
+    ax[1, 1].set_xlabel(r'$\theta_2$')
+
+    fig.suptitle('Parameters for learning rate={}'.format(LR), y=0.93, fontsize=14)
     plt.tight_layout()
     plt.show()
